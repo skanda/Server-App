@@ -112,7 +112,7 @@ public class Server {
 
 			int timeoutval1 = 0;
 			int hash;
-			
+
 			public TimeoutTask1(int hashVal)
 			{
 				this.hash = hashVal;
@@ -124,12 +124,12 @@ public class Server {
 				if(timeoutval1 == 15)
 				{
 					System.out.println("15 sec over before"+hash);
-					
+
 					for (Map.Entry<Integer, String> entry : goalKeep.entrySet())
 					{
 						System.out.println("Entry Key:"+entry.getKey()+","+"Entry Value"+entry.getValue());
 					}
-					
+
 					if(goalKeep.containsKey(hash))
 					{
 						System.out.println("15 sec over");
@@ -247,14 +247,26 @@ public class Server {
 					if(haveQuaffle)
 					{
 						System.out.println("Inside have qauffle"+ haveQuaffle);
+
+						int i=0;
 						Random generator = new Random();
-						Object[] values = dontHave.values().toArray();
+						Object[] values = new Object[dontHave.size()-goalKeep.size()];
+						for (Map.Entry<Integer, String> entry : dontHave.entrySet())
+						{
+							if(!(goalKeep.containsKey(entry.getKey())))
+							{
+								values[i]=entry.getValue();
+								i++;
+							}
+
+						}
 						sendIpAddress = (values[generator.nextInt(values.length)]).toString();
 						//	hashValue = Integer.parseInt(dontHave.get(keysAsArray.get(r.nextInt(keysAsArray.size()))));
 						System.out.println(sendIpAddress);
 						//	sendIpAddress = dontHave.get(hashValue);
 						System.out.println("Sending the Quaffle....");
 						send.SenderThread("Quaffle",sendIpAddress.substring(0, sendIpAddress.indexOf(",")));
+
 					}
 					if(haveBludger && !haveQuaffle)
 					{	
@@ -321,6 +333,7 @@ public class Server {
 								score2+=10;
 							}	
 
+							send.SenderThread("goal", trygoalIP);
 							for (Map.Entry<Integer, String> entry1 : dontHave.entrySet())
 							{
 								ipaddr = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
@@ -332,6 +345,7 @@ public class Server {
 								ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
 								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
 							}
+							haveQuaffle = true;
 						}
 						else
 							haveQuaffle = true;
@@ -405,48 +419,77 @@ public class Server {
 
 						trygoalTeam = teamVal;
 
-						for(Map.Entry<Integer, String> entry : goalKeep.entrySet())
+						if(!goalKeep.isEmpty() && goalkeepFlag)
 						{
-							String entryvalue = entry.getValue().toString();
-							temp = entryvalue.substring(entryvalue.indexOf(",")+1, entryvalue.length());
-							String ipaddr = entryvalue.substring(0, entryvalue.indexOf(","));
-
-							if(goalkeepFlag == true && temp != teamVal)
+							for(Map.Entry<Integer, String> entry : goalKeep.entrySet())
 							{
-								goalattempt = true;
-								send.SenderThread("Quaffle",ipaddr);
+								String entryvalue = entry.getValue().toString();
+								temp = entryvalue.substring(entryvalue.indexOf(",")+1, entryvalue.length());
+								String ipaddr = entryvalue.substring(0, entryvalue.indexOf(","));
+
+								if(goalkeepFlag == true && temp != teamVal)
+								{
+									goalattempt = true;
+									send.SenderThread("Quaffle",ipaddr);
+
+								}
+								else if(goalkeepFlag == true && temp == teamVal)
+								{
+									System.out.println(ipstart.substring(ipstart.indexOf(",")+1, ipstart.length()));
+									if(ipstart.substring(ipstart.indexOf(",")+1, ipstart.length()).equalsIgnoreCase("1"))
+									{
+										score1+=10;
+									}
+									else
+									{
+										score2+=10;
+									}	
+
+									for (Map.Entry<Integer, String> entry1 : dontHave.entrySet())
+									{
+										ipaddr = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
+										send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr);
+									}
+
+									for (Map.Entry<Integer, String> entry2 : haveQBall.entrySet())
+									{
+										ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
+										send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
+									}
+									haveQuaffle = true;
+								}
+								dontHave.put(hashValue,haveQBall.get(hashValue).toString());
+								haveQBall.remove(hashValue);
 
 							}
-							else if(goalkeepFlag == true && temp == teamVal)
+						}
+						else
+						{
+							if(ipstart.substring(ipstart.indexOf(",")+1, ipstart.length()).equalsIgnoreCase("1"))
 							{
-								System.out.println(ipstart.substring(ipstart.indexOf(",")+1, ipstart.length()));
-								if(ipstart.substring(ipstart.indexOf(",")+1, ipstart.length()).equalsIgnoreCase("1"))
-								{
-									score1+=10;
-								}
-								else
-								{
-									score2+=10;
-								}	
-
-								for (Map.Entry<Integer, String> entry1 : dontHave.entrySet())
-								{
-									ipaddr = entry1.getValue().substring(0, entry.getValue().indexOf(","));
-									send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr);
-								}
-
-								for (Map.Entry<Integer, String> entry2 : haveQBall.entrySet())
-								{
-									ipaddr = entry2.getValue().substring(0, entry.getValue().indexOf(","));
-									send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
-								}
-								haveQuaffle = true;
+								score1+=10;
 							}
+							else
+							{
+								score2+=10;
+							}	
+
+							for (Map.Entry<Integer, String> entry1 : dontHave.entrySet())
+							{
+								ipaddr = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
+								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr);
+							}
+
+							for (Map.Entry<Integer, String> entry2 : haveQBall.entrySet())
+							{
+								ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
+								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
+							}
+							haveQuaffle = true;
+
 							dontHave.put(hashValue,haveQBall.get(hashValue).toString());
 							haveQBall.remove(hashValue);
-
 						}
-
 					}
 					else if(recievedData[0].equalsIgnoreCase("transQuaffle"))
 					{
