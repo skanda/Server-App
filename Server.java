@@ -4,12 +4,15 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.OutputStream;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
@@ -19,13 +22,17 @@ import java.util.TimerTask;
 
 public class Server {
 
+
 	public static String dataFromApp;
 	public static String[] recievedData;
+	//	public static boolean goalkeepFlag = false;
 
-	public static String qValue = "";
-	public static String bValue = "";
+	public static int score = 0;
+
+	public static int goaltry_flag = 0;
 
 	public Server(){
+
 	}
 
 	public void SenderThread (String msg, String ipaddr){
@@ -38,7 +45,7 @@ public class Server {
 			System.out.println("Sender Thread Running: "+ipaddr+","+senderPort+"===="+msg);
 			Socket client = new Socket(ipaddr, senderPort);
 
-			System.out.println("Preparing to send..");
+			System.out.println("Entered while loop");
 			OutputStream outToServer = client.getOutputStream();
 			DataOutputStream out = new DataOutputStream(outToServer);
 			System.out.println("Sending message :"+sendmessage);
@@ -60,11 +67,13 @@ public class Server {
 		public int recieverPort = 4343;
 		public boolean flag_run = true;
 		public boolean newConnections = true;
+		InetSocketAddress sockAddr;
 
 		DataInputStream in;
 		int helloCounter = 0;
 		int score1 = 0;
 		int score2 = 0;
+		int count = 0;
 		public static boolean haveQuaffle = true;
 		public static boolean haveBludger = true;
 		public static boolean knockoutOpponent = false;
@@ -81,21 +90,19 @@ public class Server {
 		static HashMap<Integer, String> offlineList = new HashMap<Integer, String>();
 		static HashMap<Integer, String> goalKeep = new HashMap<Integer, String>();
 
+		String sendIpAddress;
 		int hashValue;
-		Object[] values_dontHave_Q;
-		Object[] values_dontHave_B;
-		Object[] values_dontHave;
+		Object[] values;
 
-		String ipaddr_MapEntry;
-		String ipAddress;
+		Iterator iter;
+		String ipaddr;
+		String x;
 		int rssiVal;
 		public static String tryknockoutIP; 
 		public static String trygoalIP;
 		public static String trygoalTeam;
-		public static String knockoutTarget="";
+		public static int hashVal;
 
-		int hashValueB;
-		int hashValueQ;
 		Server send = new Server();
 
 		public ReceiverThread(){
@@ -105,12 +112,12 @@ public class Server {
 		class TimeoutTask1 extends TimerTask{
 
 			int timeoutval1 = 0;
-			int hashEntry;
+			int hash;
 			String teamnumber;
 
 			public TimeoutTask1(int hashVal, String teamnum)
 			{
-				this.hashEntry = hashVal;
+				this.hash = hashVal;
 				this.teamnumber = teamnum;
 			}
 			public void run()
@@ -119,19 +126,23 @@ public class Server {
 				timeoutval1++;
 				if(timeoutval1 == 15)
 				{
-					System.out.println("15 sec over before"+hashEntry);
+					System.out.println("15 sec over before"+hash);
 
 					for (Map.Entry<Integer, String> entry : goalKeep.entrySet())
 					{
 						System.out.println("Entry Key:"+entry.getKey()+","+"Entry Value"+entry.getValue());
 					}
 
-					if(goalKeep.containsKey(hashEntry))
+					if(goalKeep.containsKey(hash))
 					{
 						System.out.println("15 sec over");
-						goalKeep.remove(hashEntry);
+						goalKeep.remove(hash);
 						if(teamnumber.equalsIgnoreCase("1"))
+						{
 							timer1.cancel();
+
+						}
+
 						else
 							timer2.cancel();
 					}
@@ -140,22 +151,49 @@ public class Server {
 			}
 		}
 
-		//Test hashVal or hashEntry ****
-		public void startTimer(int hashEntry, String teamNumber){
-			System.out.println("In Server, starting goalkeeping");
-			System.out.println("Inside starttimer"+hashEntry);
+		/*	class TimeoutTask2 extends TimerTask{
 
-			if(teamNumber.equalsIgnoreCase("1"))
+			int timeoutval2 = 0;
+			public void run()
+			{
+				System.out.println("Executing.."+timeoutval2);
+				timeoutval2++;
+				if(timeoutval2 == 15)
+					timer2.cancel();
+			}
+		}*/
+
+		public void startTimer(int hashVal, String teamnumber){
+			System.out.println("In Server, starting goalkeeping");
+			System.out.println("Inside starttimer"+hashVal);
+
+			if(teamnumber.equalsIgnoreCase("1"))
 			{
 				timer1 = new Timer();
-				timer1.schedule(new TimeoutTask1(hashEntry, teamNumber), 0, 1*1000);
+				timer1.schedule(new TimeoutTask1(hashVal, teamnumber), 0, 1*1000);
 			}
 			else
 			{
 				timer2 = new Timer();
-				timer2.schedule(new TimeoutTask1(hashEntry, teamNumber), 0, 1*1000);
+				timer2.schedule(new TimeoutTask1(hashVal, teamnumber), 0, 1*1000);
 			}
+			//		if(i==1)
+			//		{
+
+			/*		}
+			else
+			{
+				timer2 = new Timer();
+				timer2.schedule(new TimeoutTask2(), 0, 1*1000);
+			}*/
 		}
+
+		/*	public randomProbfunc(Object[])
+		{
+			doublue rand = Math.random();
+
+			for(int i=1;i<)
+		}*/
 
 		public void stopTimer(String teamnum){
 			System.out.println("Stopping Timer...");
@@ -188,10 +226,10 @@ public class Server {
 						for (Map.Entry<Integer, String> entry : dontHave.entrySet())
 						{
 							System.out.println(entry.getKey() + "," + entry.getValue());
-							ipaddr_MapEntry = entry.getValue().substring(0, entry.getValue().indexOf(","));
-							System.out.println(ipaddr_MapEntry);
+							ipaddr = entry.getValue().substring(0, entry.getValue().indexOf(","));
+							System.out.println(ipaddr);
 							System.out.println("Before sending the scores");
-							send.SenderThread("start-"+String.valueOf((helloCounter%2)+1),ipaddr_MapEntry);
+							send.SenderThread("start-"+String.valueOf((helloCounter%2)+1),ipaddr);
 							helloCounter --;
 						}
 						server.close();
@@ -211,18 +249,19 @@ public class Server {
 					if(recievedData[0].equalsIgnoreCase("hello"))
 					{
 
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
 
-						System.out.println(ipAddress.substring(1, ipAddress.length()));
+						//sockAddr = (InetSocketAddress)server.getRemoteSocketAddress();
+						System.out.println(x.substring(1, x.length()));
 
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
+						hashValue = x.substring(1, x.length()).hashCode();
 						System.out.println(hashValue);
 
-						dontHave.put(hashValue,ipAddress.substring(1, ipAddress.length())+","+String.valueOf((helloCounter%2)+1));
+						dontHave.put(hashValue,x.substring(1, x.length())+","+String.valueOf((helloCounter%2)+1));
 
 						System.out.println("Before sending the scores");
-						send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipAddress.substring(1, ipAddress.length()));
-						ipRssi.put(ipAddress.substring(1, ipAddress.length())+","+String.valueOf((helloCounter%2)+1),Integer.parseInt(recievedData[1]));
+						send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),x.substring(1, x.length()));
+						ipRssi.put(x.substring(1, x.length())+","+String.valueOf((helloCounter%2)+1),Integer.parseInt(recievedData[1]));
 					}
 
 					helloCounter++;
@@ -238,121 +277,41 @@ public class Server {
 					{
 						System.out.println("Inside have qauffle"+ haveQuaffle);
 
-						if(!dontHave.isEmpty()){
-							int i=0;
-							Random generator = new Random();
-							values_dontHave_Q = new Object[dontHave.size()-goalKeep.size()];
-
-							System.out.println("values size"+values_dontHave_Q.length);
-							for (Map.Entry<Integer, String> entry : dontHave.entrySet())
-							{
-								if(!(goalKeep.containsKey(entry.getKey())) && !(haveBBall.containsKey(entry.getKey())))
-								{
-									System.out.println("Found a value, adding to array");
-									values_dontHave_Q[i]=entry.getValue();
-									i++;
-								}
-
-							}
-
-							System.out.println("after computing values size"+dontHave.size());
-							if((dontHave.size()-goalKeep.size()) != 0)
-							{
-								String sendIpAddressQuaffle;
-								sendIpAddressQuaffle = (values_dontHave_Q[generator.nextInt(values_dontHave_Q.length)]).toString();
-								System.out.println(sendIpAddressQuaffle);
-								if(!knockoutTarget.equalsIgnoreCase(sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")))){
-									System.out.println("Sending the Quaffle....");
-									send.SenderThread("Quaffle",sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")));
-									hashValueQ = sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")).toString().hashCode();
-									haveQuaffle = false;
-									System.out.println("Q hashvalue:"+hashValueQ);
-									qValue = dontHave.get(hashValueQ).toString();
-									haveQBall.put(hashValueQ, qValue);
-									dontHave.remove(hashValueQ);
-								}
-							}
-						}
-					}
-					if(haveBludger)
-					{	
 						int i=0;
 						Random generator = new Random();
-						values_dontHave_B = new Object[dontHave.size()-goalKeep.size()];
-
+						values = new Object[dontHave.size()-goalKeep.size()];
 
 						for (Map.Entry<Integer, String> entry : dontHave.entrySet())
 						{
-							if(!(goalKeep.containsKey(entry.getKey())) && !(haveQBall.containsKey(entry.getKey())))
+							if(!(goalKeep.containsKey(entry.getKey())))
 							{
-								values_dontHave_B[i]=entry.getValue();
+								values[i]=entry.getValue();
 								i++;
 							}
 
 						}
 
-						System.out.println("after computing values size in haveBludger"+dontHave.size());
 						if((dontHave.size()-goalKeep.size()) != 0)
 						{
-							String sendIpAddressBludger;
-							sendIpAddressBludger = (values_dontHave_B[generator.nextInt(values_dontHave_B.length)]).toString();
-							System.out.println(sendIpAddressBludger);
-							if(!knockoutTarget.equalsIgnoreCase(sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")))){
-								System.out.println("Sending the Bludger....");
-								send.SenderThread("Bludger",sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")));
-								hashValueB = sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")).toString().hashCode();
-								haveBludger = false;
-								System.out.println("B hashvalue:"+hashValueB);
-								bValue = dontHave.get(hashValueB).toString();
-								haveBBall.put(hashValueB, bValue);
-								dontHave.remove(hashValueB);
-							}
-						}
-
-					}
-
-				
-
-					if((score1 > 50) || (score2 > 50))
-					{
-						double randomVal;
-						String sendIpAddressSnitch;
-						System.out.println("Inside Snitch distribution");
-						if(Math.abs(score1 - score2) <= 30)
-						{
-							//	randomVal = Math.random();
-							//	if(randomVal > 0.5)
-							//	{
-							int i=0;
-							Random generator = new Random();
-							values_dontHave = new Object[dontHave.size()-goalKeep.size()];
-
-							System.out.println("Generating randomly...");
-							for (Map.Entry<Integer, String> entry : dontHave.entrySet())
-							{
-								if(!(goalKeep.containsKey(entry.getKey())))
-								{
-									values_dontHave[i]=entry.getValue();
-									i++;
-								}
-
-							}
-
-							if((dontHave.size()-goalKeep.size()) != 0)
-							{
-								sendIpAddressSnitch = (values_dontHave[generator.nextInt(values_dontHave.length)]).toString();
-								//	hashValue = Integer.parseInt(dontHave.get(keysAsArray.get(r.nextInt(keysAsArray.size()))));
-								System.out.println("Sending Snitch to the IP:"+sendIpAddressSnitch);
-								//	sendIpAddress = dontHave.get(hashValue);
-								System.out.println("Sending the Snitch....");
-								send.SenderThread("snitch",sendIpAddressSnitch.substring(0, sendIpAddressSnitch.indexOf(",")));
-								haveQuaffle = false;
-							}
-							//		}
+							sendIpAddress = (values[generator.nextInt(values.length)]).toString();
+							//	hashValue = Integer.parseInt(dontHave.get(keysAsArray.get(r.nextInt(keysAsArray.size()))));
+							System.out.println(sendIpAddress);
+							//	sendIpAddress = dontHave.get(hashValue);
+							System.out.println("Sending the Quaffle....");
+							send.SenderThread("snitch",sendIpAddress.substring(0, sendIpAddress.indexOf(",")));
+							haveQuaffle = false;
 						}
 					}
+					if(haveBludger && !haveQuaffle)
+					{	
+						Random generator = new Random();
+						Object[] values = dontHave.values().toArray();
+						sendIpAddress = (values[generator.nextInt(values.length)]).toString();
+						send.SenderThread("Bludger",sendIpAddress.substring(0, sendIpAddress.indexOf(",")));
+						haveBludger = false;
+					}
 
-					System.out.println("Data sent....waiting..");
+					System.out.println("Quaffle sent....waiting.."+sendIpAddress.substring(0, sendIpAddress.indexOf(",")));
 
 
 					server = serverSocket.accept();
@@ -371,13 +330,12 @@ public class Server {
 					{
 
 						haveQuaffle = false;
-						qValue = "";
-						String tempValue;
-						String teamNumber;
+						String temp;
+						String teamnum;
 						System.out.println("caught Quaffle");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
-					//	System.out.println(hashValue+":"+dontHave.get(hashValue).toString());
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						hashValue = x.substring(1, x.length()).hashCode();
+						System.out.println(hashValue+":"+dontHave.get(hashValue).toString());
 
 
 						if(goalattempt==true)
@@ -385,24 +343,20 @@ public class Server {
 							System.out.println("Inside the caught quaffle..goal attempted");
 							send.SenderThread("missedgoal", trygoalIP);
 							goalattempt = false;
-							tempValue = goalKeep.get(hashValue).toString();
-							teamNumber = tempValue.substring(tempValue.indexOf(",")+1, tempValue.length());
-							haveQBall.put(hashValue,goalKeep.get(hashValue).toString());
+							temp = goalKeep.get(hashValue).toString();
+							teamnum = temp.substring(temp.indexOf(",")+1, temp.length());
 							goalKeep.remove(hashValue);
-							rthread.stopTimer(teamNumber);
+							rthread.stopTimer(teamnum);
 
 							System.out.println("Stopped Goal keeping...inside caught quaffle");
 						}
 
-					//	haveQBall.put(hashValue,dontHave.get(hashValue).toString());
-					//	System.out.println("Size of dont have list before removing"+dontHave.size());
-					//	dontHave.remove(hashValue);
-					//	System.out.println("Size of dont have list after removing"+dontHave.size());
+						haveQBall.put(hashValue,dontHave.get(hashValue).toString());
+						dontHave.remove(hashValue);
 
 					}
 					else if(recievedData[0].equalsIgnoreCase("missedQuaffle"))
-					{	
-
+					{
 						if(goalattempt)
 						{
 
@@ -418,57 +372,43 @@ public class Server {
 							send.SenderThread("goal", trygoalIP);
 							for (Map.Entry<Integer, String> entry1 : dontHave.entrySet())
 							{
-								ipaddr_MapEntry = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
-								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr_MapEntry);
+								ipaddr = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
+								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr);
 							}
 
 							for (Map.Entry<Integer, String> entry2 : haveQBall.entrySet())
 							{
-								ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
-								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
-							}
-							for (Map.Entry<Integer, String> entry2 : haveBBall.entrySet())
-							{
-								ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
-								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
+								ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
+								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
 							}
 							goalattempt = false;
 							haveQuaffle = true;
 						}
 						else
-						{
-							dontHave.put(hashValueQ,qValue);
-							haveQBall.remove(hashValueQ);
 							haveQuaffle = true;
-						}
 					}
 					else if(recievedData[0].equalsIgnoreCase("caughtBludger"))
 					{
 						haveBludger = false;
-						bValue = "";
 						System.out.println("caught Bludger");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
-						//		System.out.println(hashValue+":"+dontHave.get(hashValue).toString());
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						hashValue = x.substring(1, x.length()).hashCode();
+						System.out.println(hashValue+":"+dontHave.get(hashValue).toString());
 
-					//	haveBBall.put(hashValue, dontHave.get(hashValue).toString());
-					//	System.out.println("Size of dont have list before removing bludger"+dontHave.size());
-					//	dontHave.remove(hashValue);
-					//	System.out.println("Size of dont have list after removing bludger"+dontHave.size());
+						haveBBall.put(hashValue, dontHave.get(hashValue).toString());
+						dontHave.remove(hashValue);
 					}
 					else if(recievedData[0].equalsIgnoreCase("missedBludger"))
 					{
 						haveBludger = true;
-						dontHave.put(hashValueB,bValue);
-						haveBBall.remove(hashValueB);
 					}
 					else if(recievedData[0].equalsIgnoreCase("goalkeep"))
 					{
 
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
-						String tempValue = dontHave.get(hashValue).toString();
-						String teamname = tempValue.substring(tempValue.indexOf(",")+1, tempValue.length());;
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						hashValue = x.substring(1, x.length()).hashCode();
+						String t1 = dontHave.get(hashValue).toString();
+						String teamname = t1.substring(t1.indexOf(",")+1, t1.length());;
 
 
 						System.out.println("ENtered GOal Keep function");
@@ -499,17 +439,17 @@ public class Server {
 					else if(recievedData[0].equalsIgnoreCase("trygoal"))
 					{
 						System.out.println("Entered trygoal");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						System.out.println(ipAddress);
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						System.out.println(x);
 						String teamVal;
-						String tempValue;
+						String temp;
 						String opponentGoalkeeper="None";
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
-						trygoalIP = ipAddress.substring(1, ipAddress.length());
+						hashValue = x.substring(1, x.length()).hashCode();
+						trygoalIP = x.substring(1, x.length());
 
 						System.out.println(hashValue);
-						String ipTeamData = haveQBall.get(hashValue).toString();
-						teamVal = ipTeamData.substring(ipTeamData.indexOf(",")+1, ipTeamData.length()).toString();
+						String ipstart = haveQBall.get(hashValue).toString();
+						teamVal = ipstart.substring(ipstart.indexOf(",")+1, ipstart.length()).toString();
 
 						trygoalTeam = teamVal;
 
@@ -518,12 +458,12 @@ public class Server {
 							for(Map.Entry<Integer, String> entry : goalKeep.entrySet())
 							{
 								String entryvalue = entry.getValue().toString();
-								tempValue = entryvalue.substring(entryvalue.indexOf(",")+1, entryvalue.length());
-								ipaddr_MapEntry = entryvalue.substring(0, entryvalue.indexOf(","));
+								temp = entryvalue.substring(entryvalue.indexOf(",")+1, entryvalue.length());
+								String ipaddr = entryvalue.substring(0, entryvalue.indexOf(","));
 
-								if( tempValue != teamVal)
+								if( temp != teamVal)
 								{
-									opponentGoalkeeper = ipaddr_MapEntry;
+									opponentGoalkeeper = ipaddr;
 									goalattempt = true;
 
 
@@ -536,8 +476,8 @@ public class Server {
 							}
 							else
 							{
-								System.out.println(ipTeamData.substring(ipTeamData.indexOf(",")+1, ipTeamData.length()));
-								if(ipTeamData.substring(ipTeamData.indexOf(",")+1, ipTeamData.length()).equalsIgnoreCase("1"))
+								System.out.println(ipstart.substring(ipstart.indexOf(",")+1, ipstart.length()));
+								if(ipstart.substring(ipstart.indexOf(",")+1, ipstart.length()).equalsIgnoreCase("1"))
 								{
 									score1+=10;
 								}
@@ -548,14 +488,14 @@ public class Server {
 
 								for (Map.Entry<Integer, String> entry1 : dontHave.entrySet())
 								{
-									ipaddr_MapEntry = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
-									send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr_MapEntry);
+									ipaddr = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
+									send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr);
 								}
 
 								for (Map.Entry<Integer, String> entry2 : haveQBall.entrySet())
 								{
-									ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
-									send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
+									ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
+									send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
 								}
 								haveQuaffle = true;
 							}
@@ -565,7 +505,7 @@ public class Server {
 						}
 						else
 						{
-							if(ipTeamData.substring(ipTeamData.indexOf(",")+1, ipTeamData.length()).equalsIgnoreCase("1"))
+							if(ipstart.substring(ipstart.indexOf(",")+1, ipstart.length()).equalsIgnoreCase("1"))
 							{
 								score1+=10;
 							}
@@ -576,19 +516,14 @@ public class Server {
 
 							for (Map.Entry<Integer, String> entry1 : dontHave.entrySet())
 							{
-								ipaddr_MapEntry = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
-								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr_MapEntry);
+								ipaddr = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
+								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr);
 							}
 
 							for (Map.Entry<Integer, String> entry2 : haveQBall.entrySet())
 							{
-								ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
-								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
-							}
-							for (Map.Entry<Integer, String> entry2 : haveBBall.entrySet())
-							{
-								ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
-								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
+								ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
+								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
 							}
 							haveQuaffle = true;
 
@@ -599,8 +534,8 @@ public class Server {
 					else if(recievedData[0].equalsIgnoreCase("transQuaffle"))
 					{
 						System.out.println("Inside transquaffle block");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						hashValue = x.substring(1, x.length()).hashCode();
 						dontHave.put(hashValue,haveQBall.get(hashValue).toString());
 						haveQBall.remove(hashValue);
 						System.out.println("End of transquaffle block");
@@ -608,8 +543,8 @@ public class Server {
 					else if(recievedData[0].equalsIgnoreCase("transBludger"))
 					{
 						System.out.println("Inside transbludger");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						hashValue = x.substring(1, x.length()).hashCode();
 						System.out.println("trans bludger hashaval:"+hashValue);
 						System.out.println("trans bludger value:"+haveBBall.get(hashValue).toString());
 						dontHave.put(hashValue,haveBBall.get(hashValue).toString());
@@ -619,8 +554,8 @@ public class Server {
 					else if(recievedData[0].equalsIgnoreCase("haveQuaffle"))
 					{
 						System.out.println("Inside haveQuaffle block");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						hashValue = x.substring(1, x.length()).hashCode();
 						haveQBall.put(hashValue,dontHave.get(hashValue).toString());
 						dontHave.remove(hashValue);	
 						System.out.println("End of  haveQuaffle block");
@@ -628,8 +563,8 @@ public class Server {
 					else if(recievedData[0].equalsIgnoreCase("haveBludger"))
 					{
 						System.out.println("Inside havebludger block");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						hashValue = x.substring(1, x.length()).hashCode();
 						System.out.println("have bludger hashaval:"+hashValue);
 						System.out.println("have bludger value:"+dontHave.get(hashValue).toString());
 						haveBBall.put(hashValue,dontHave.get(hashValue).toString());
@@ -640,20 +575,20 @@ public class Server {
 					}
 					else if(recievedData[0].equalsIgnoreCase("tryknockout"))
 					{
-
+						int hashvalTeam;
 						String teamNum;
 						String opponentTeam;
-						String tempValue;
+						String temp;
 						boolean candidateFound = false;
 
 
 						System.out.println("Inside Tryknockout");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
 
-						tryknockoutIP = ipAddress.substring(1, ipAddress.length());
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
-						tempValue = haveBBall.get(hashValue).toString();
-						teamNum = tempValue.substring(tempValue.indexOf(",")+1, tempValue.length());
+						tryknockoutIP = x.substring(1, x.length());
+						hashValue = x.substring(1, x.length()).hashCode();
+						temp = haveBBall.get(hashValue).toString();
+						teamNum = temp.substring(temp.indexOf(",")+1, temp.length());
 
 						if(!candidateFound)
 						{
@@ -668,14 +603,14 @@ public class Server {
 									if(ipRssi.containsKey(entryValue))
 										rssiVal = ipRssi.get(entryValue);
 
-									if((rssiVal < (Integer.parseInt(recievedData[1])+15)) && (rssiVal > (Integer.parseInt(recievedData[1])-15)))
-									{
-										knockoutList.add(entryValue);
-										candidateFound = true;
-										System.out.println("Candidate found in QBall");
-									}
-									else
-										candidateFound = false;
+									//		if((rssiVal < (Integer.parseInt(recievedData[1])+5)) && (rssiVal > (Integer.parseInt(recievedData[1])-5)))
+									//		{
+									knockoutList.add(entryValue);
+									candidateFound = true;
+									System.out.println("Candidate found in QBall");
+									//		}
+									//		else
+									//			candidateFound = false;
 
 								}
 							}
@@ -694,14 +629,14 @@ public class Server {
 									if(ipRssi.containsKey(entryValue))
 										rssiVal = ipRssi.get(entryValue);
 
-									if((rssiVal < (Integer.parseInt(recievedData[1])+15)) && (rssiVal > (Integer.parseInt(recievedData[1])-15)))
-									{
-										knockoutList.add(entryValue);
-										candidateFound = true;
-										System.out.println("Candidate  Found in BBall");
-									}
-									else
-										candidateFound = false;
+									//		if((rssiVal < (Integer.parseInt(recievedData[1])+5)) && (rssiVal > (Integer.parseInt(recievedData[1])-5)))
+									//		{
+									knockoutList.add(entryValue);
+									candidateFound = true;
+									System.out.println("Candidate  Found in BBall");
+									//		}
+									//		else
+									//			candidateFound = false;
 
 								}
 							}
@@ -720,14 +655,14 @@ public class Server {
 									if(ipRssi.containsKey(entryValue))
 										rssiVal = ipRssi.get(entryValue);
 
-									if((rssiVal < (Integer.parseInt(recievedData[1])+15)) && (rssiVal > (Integer.parseInt(recievedData[1])-15)))
-									{
-										knockoutList.add(entryValue);
-										candidateFound = true;
-										System.out.println("Candidate Found in donthave");
-									}
-									else
-										candidateFound = false;
+									//		if((rssiVal < (Integer.parseInt(recievedData[1])+5)) && (rssiVal > (Integer.parseInt(recievedData[1])-5)))
+									//		{
+									knockoutList.add(entryValue);
+									candidateFound = true;
+									System.out.println("Candidate Found in donthave");
+									//		}
+									//		else
+									//			candidateFound = false;
 
 								}
 
@@ -741,7 +676,6 @@ public class Server {
 							String item = knockoutList.get(index);
 
 							System.out.println("Sending knockout message.."+item.substring(0, item.indexOf(",")));
-							knockoutTarget = item.substring(0, item.indexOf(","));
 							send.SenderThread("knockout", item.substring(0, item.indexOf(",")));
 						}
 						//Drop off the ball
@@ -752,31 +686,31 @@ public class Server {
 						}
 
 						System.out.println("Dropping the ball..");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						hashValue = x.substring(1, x.length()).hashCode();
 						dontHave.put(hashValue, haveBBall.get(hashValue).toString());
 						haveBBall.remove(hashValue);
 					}
 					else if(recievedData[0].equalsIgnoreCase("knockedout"))
 					{
 						boolean playerKnockedout = false;
-						String knockedoutIPaddr;
+						String xip;
+						String teamnum_goalkeep;
 
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						knockedoutIPaddr = ipAddress.substring(1,ipAddress.length());
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						xip = x.substring(1,x.length());
+						hashValue = x.substring(1, x.length()).hashCode();
 
-						//	knockoutTarget="";
 						System.out.println("Entered knockedout block...");
 						if(!playerKnockedout)
 						{
 							for (Map.Entry<Integer, String> entry : haveQBall.entrySet())
 							{
 								String entryValue = entry.getValue().toString();
-								ipaddr_MapEntry = entry.getValue().substring(0, entry.getValue().indexOf(",")).toString();
+								ipaddr = entry.getValue().substring(0, entry.getValue().indexOf(",")).toString();
 
 								System.out.println("Iterating QBall to put to offline list");
-								if(knockedoutIPaddr.equalsIgnoreCase(ipaddr_MapEntry)){
+								if(xip.equalsIgnoreCase(ipaddr)){
 									System.out.println("Putting to knockoutlist from QBall");
 									haveQuaffle = true;
 									offlineList.put(hashValue,entryValue);
@@ -793,10 +727,10 @@ public class Server {
 							for (Map.Entry<Integer, String> entry : haveBBall.entrySet())
 							{
 								String entryValue = entry.getValue().toString();
-								ipaddr_MapEntry = entry.getValue().substring(0, entry.getValue().indexOf(",")).toString();
+								ipaddr = entry.getValue().substring(0, entry.getValue().indexOf(",")).toString();
 
 								System.out.println("Iterating BBall to put to offline list");
-								if(knockedoutIPaddr.equalsIgnoreCase(ipaddr_MapEntry)){
+								if(xip.equalsIgnoreCase(ipaddr)){
 
 									System.out.println("Putting to knockoutlist from BBall");
 									haveBludger = true;
@@ -814,7 +748,7 @@ public class Server {
 							for (Map.Entry<Integer, String> entry : dontHave.entrySet())
 							{
 								String entryValue = entry.getValue().toString();
-								ipaddr_MapEntry = entry.getValue().substring(0, entry.getValue().indexOf(",")).toString();
+								ipaddr = entry.getValue().substring(0, entry.getValue().indexOf(",")).toString();
 								String teamNum = entry.getValue().substring(entry.getValue().indexOf(",")+1,entry.getValue().length()).toString();
 
 								if(goalKeep.containsKey(hashValue))
@@ -825,10 +759,10 @@ public class Server {
 
 								}
 
-								System.out.println("IP1:"+knockedoutIPaddr);
-								System.out.println("IP2:"+ipaddr_MapEntry);
+								System.out.println("IP1:"+xip);
+								System.out.println("IP2:"+ipaddr);
 								System.out.println("Iterating dontHave to put to offline list");
-								if(knockedoutIPaddr.equalsIgnoreCase(ipaddr_MapEntry))
+								if(xip.equalsIgnoreCase(ipaddr))
 								{
 									System.out.println("Putting to knockoutlist from donthave");
 									offlineList.put(hashValue,entryValue);
@@ -850,9 +784,9 @@ public class Server {
 
 						//Multiple players can be reconnecting...add to the donthave list after some flag is set
 						System.out.println("Inside reconnect...");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						System.out.println(ipAddress);
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						System.out.println(x);
+						hashValue = x.substring(1, x.length()).hashCode();
 						System.out.println("hashval reconenct:"+hashValue);
 						System.out.println(offlineList.get(hashValue));
 						if(!dontHave.containsKey(hashValue))
@@ -860,55 +794,14 @@ public class Server {
 							dontHave.put(hashValue, offlineList.get(hashValue).toString());
 							offlineList.remove(hashValue);
 						}
-						knockoutTarget="";
 
 						System.out.println("Reconnecting the knockedout player...");
-						send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipAddress.substring(1, ipAddress.length()));
+						send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),x.substring(1, x.length()));
 
 					}
-					else if(recievedData[0].equalsIgnoreCase("caughtsnitch"))
-					{
-						System.out.println("Inside Caught Snitch...");
-						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
-						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
-
-						String teamval = dontHave.get(hashValue);
-						String teamnum = teamval.substring(teamval.indexOf(",")+1, teamval.length());
-
-						if(teamnum.equalsIgnoreCase("1"))
-						{
-							score1+=150;
-						}
-						else
-						{
-							score2+=150;
-						}	
-
-						for (Map.Entry<Integer, String> entry1 : dontHave.entrySet())
-						{
-							ipaddr_MapEntry = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
-							send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr_MapEntry);
-							send.SenderThread("gameover", ipaddr_MapEntry);
-						}
-
-						for (Map.Entry<Integer, String> entry2 : haveQBall.entrySet())
-						{
-							ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
-							send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
-							send.SenderThread("gameover", ipaddr_MapEntry);
-						}
-						for (Map.Entry<Integer, String> entry2 : haveBBall.entrySet())
-						{
-							ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
-							send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
-							send.SenderThread("gameover", ipaddr_MapEntry);
-						}
-						server.close();
-						break;
-					}
 
 
-					System.out.println("Closing one of socket connection");
+					System.out.println("Timeout over");
 
 
 					server.close();
