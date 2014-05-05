@@ -20,18 +20,44 @@ import java.util.TimerTask;
 
 
 
-public class Server {
+public class Server1 {
 
 
 	public static String dataFromApp;
 	public static String[] recievedData;
-	//	public static boolean goalkeepFlag = false;
+	static Object[] values;
+	static String sendIpAddressQuaffle;
+	static String sendIpAddressBludger;
+	static String sendIpAddressSnitch;
 
 	public static int score = 0;
 
+	public static String qValue = "";
+	public static String bValue = "";
 	public static int goaltry_flag = 0;
 
-	public Server(){
+	public static boolean haveQuaffle = true;
+	public static boolean haveBludger = true;
+	public static boolean haveSnitch = true;
+	public static boolean knockoutOpponent = false;
+	public static boolean goalattempt = false;
+
+
+	public static boolean firsttimeQuaffle = true;
+	public static boolean firsttimeBludger = true;
+
+	static HashMap<Integer, String> dontHave = new HashMap<Integer, String>();
+	static HashMap<Integer, String> haveQBall = new HashMap<Integer, String>();
+	static HashMap<Integer, String> haveBBall = new HashMap<Integer, String>();
+	static HashMap<String, Integer> ipRssi = new HashMap<String, Integer>();
+	static ArrayList<String> knockoutList = new ArrayList<String>();
+	static HashMap<Integer, String> offlineList = new HashMap<Integer, String>();
+	static HashMap<Integer, String> goalKeep = new HashMap<Integer, String>();
+	static HashMap<Integer, String> tempList = new HashMap<Integer, String>();
+
+
+
+	public Server1(){
 
 	}
 
@@ -51,12 +77,12 @@ public class Server {
 			System.out.println("Sending message :"+sendmessage);
 			out.writeUTF(sendmessage);
 			client.close();
+			System.out.println("Sent successfully");
 		}
 		catch (Exception e) {
 			// TODO: handle exception
 		}
 	}
-
 
 
 	static class ReceiverThread implements Runnable{
@@ -74,34 +100,26 @@ public class Server {
 		int score1 = 0;
 		int score2 = 0;
 		int count = 0;
-		public static boolean haveQuaffle = true;
-		public static boolean haveBludger = true;
-		public static boolean knockoutOpponent = false;
-		public static boolean goalattempt = false;
+
 
 
 		ServerSocket serverSocket;
 		Socket server;
-		static HashMap<Integer, String> dontHave = new HashMap<Integer, String>();
-		static HashMap<Integer, String> haveQBall = new HashMap<Integer, String>();
-		static HashMap<Integer, String> haveBBall = new HashMap<Integer, String>();
-		static HashMap<String, Integer> ipRssi = new HashMap<String, Integer>();
-		static ArrayList<String> knockoutList = new ArrayList<String>();
-		static HashMap<Integer, String> offlineList = new HashMap<Integer, String>();
-		static HashMap<Integer, String> goalKeep = new HashMap<Integer, String>();
 
-		String sendIpAddress;
+
 		int hashValue;
-		Object[] values;
 
-		Iterator iter;
+
 		String ipaddr;
 		String x;
 		int rssiVal;
 		public static String tryknockoutIP; 
 		public static String trygoalIP;
 		public static String trygoalTeam;
+		public static String knockoutTarget="";
 		public static int hashVal;
+		int hashValueB;
+		int hashValueQ;
 
 		Server send = new Server();
 
@@ -210,6 +228,8 @@ public class Server {
 			try
 			{
 				ReceiverThread rthread = new ReceiverThread();	
+
+				double randomVal = 0;
 				System.out.println("Receiver Thread Running: "+recieverPort);
 
 				serverSocket = new ServerSocket(recieverPort);
@@ -219,7 +239,7 @@ public class Server {
 				while(newConnections)
 				{
 
-					if(helloCounter == 2)
+					if(helloCounter == 4)
 					{
 						System.out.println("Entering hellocounter loop");
 
@@ -268,14 +288,20 @@ public class Server {
 					System.out.println(helloCounter);
 				}
 
+
+
 				while(flag_run)
 				{				
 					System.out.println("Inside the main while loop");
-					haveBludger = false;
+					//		haveQuaffle = false;
+
 
 					if(haveQuaffle)
 					{
 						System.out.println("Inside have qauffle"+ haveQuaffle);
+
+
+						randomVal = Math.random();
 
 						int i=0;
 						Random generator = new Random();
@@ -293,25 +319,109 @@ public class Server {
 
 						if((dontHave.size()-goalKeep.size()) != 0)
 						{
-							sendIpAddress = (values[generator.nextInt(values.length)]).toString();
+							sendIpAddressQuaffle = (values[generator.nextInt(values.length)]).toString();
 							//	hashValue = Integer.parseInt(dontHave.get(keysAsArray.get(r.nextInt(keysAsArray.size()))));
-							System.out.println(sendIpAddress);
+							System.out.println(sendIpAddressQuaffle);
 							//	sendIpAddress = dontHave.get(hashValue);
-							System.out.println("Sending the Quaffle....");
-							send.SenderThread("snitch",sendIpAddress.substring(0, sendIpAddress.indexOf(",")));
-							haveQuaffle = false;
+
+							if(firsttimeQuaffle){
+								System.out.println("Sending the Quaffle first time....");
+								send.SenderThread("Quaffle",sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")));
+								haveQuaffle = false;
+								hashValueQ = sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")).toString().hashCode();
+								System.out.println("Q hashvalue:"+hashValueQ);
+								qValue = dontHave.get(hashValueQ).toString();
+								dontHave.remove(hashValueQ);
+							}
+							if(!firsttimeQuaffle && (randomVal > 0 && randomVal <= 0.5)){
+								System.out.println("Sending the Quaffle....");
+								if(!knockoutTarget.equalsIgnoreCase(sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")))){
+									send.SenderThread("Quaffle",sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")));
+									haveQuaffle = false;
+									hashValueQ = sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")).toString().hashCode();
+									System.out.println("Q hashvalue:"+hashValueQ);
+									qValue = dontHave.get(hashValueQ).toString();
+									dontHave.remove(hashValueQ);
+								}
+							}
+							firsttimeQuaffle = false;
+
 						}
 					}
-					if(haveBludger && !haveQuaffle)
+					if(haveBludger)
 					{	
+
+						randomVal = Math.random();
 						Random generator = new Random();
 						Object[] values = dontHave.values().toArray();
-						sendIpAddress = (values[generator.nextInt(values.length)]).toString();
-						send.SenderThread("Bludger",sendIpAddress.substring(0, sendIpAddress.indexOf(",")));
-						haveBludger = false;
+						sendIpAddressBludger = (values[generator.nextInt(values.length)]).toString();
+						System.out.println("Have Bludger inside fn");
+						if(firsttimeBludger){
+							System.out.println("Sending the Bludger first time....");
+							send.SenderThread("Bludger",sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")));
+							haveBludger = false;
+							hashValueB = sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")).hashCode();
+							System.out.println("B hashvalue:"+hashValueB);
+							bValue = dontHave.get(hashValueB).toString();
+							dontHave.remove(hashValueB);
+						}
+						if(!firsttimeBludger && (randomVal > 0 && randomVal <= 0.5)){
+							System.out.println("Sending the Bludger....");
+							send.SenderThread("Bludger",sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")));
+							System.out.println("After sending back to haveBludger");
+							haveBludger = false;
+							hashValueB = sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")).hashCode();
+							System.out.println("B hashvalue:"+hashValueB);
+							bValue = dontHave.get(hashValueB).toString();
+							dontHave.remove(hashValueB);
+						}
+						firsttimeBludger = false;
+
+
 					}
 
-					System.out.println("Quaffle sent....waiting.."+sendIpAddress.substring(0, sendIpAddress.indexOf(",")));
+					if(!qValue.equalsIgnoreCase(""))
+						dontHave.put(hashValueQ,qValue.toString());
+
+					if(!bValue.equalsIgnoreCase(""))
+						dontHave.put(hashValueB,bValue.toString());
+
+					if((score1 > 100) || (score2 > 100))
+					{
+						System.out.println("Inside Snitch distribution");
+						if(Math.abs(score1 - score2) <= 30)
+						{
+							randomVal = Math.random();
+							if(randomVal > 0.5)
+							{
+								int i=0;
+								Random generator = new Random();
+								values = new Object[dontHave.size()-goalKeep.size()];
+
+								for (Map.Entry<Integer, String> entry : dontHave.entrySet())
+								{
+									if(!(goalKeep.containsKey(entry.getKey())))
+									{
+										values[i]=entry.getValue();
+										i++;
+									}
+
+								}
+
+								if((dontHave.size()-goalKeep.size()) != 0)
+								{
+									sendIpAddressSnitch = (values[generator.nextInt(values.length)]).toString();
+									//	hashValue = Integer.parseInt(dontHave.get(keysAsArray.get(r.nextInt(keysAsArray.size()))));
+									System.out.println(sendIpAddressSnitch);
+									//	sendIpAddress = dontHave.get(hashValue);
+									System.out.println("Sending the Snitch....");
+									send.SenderThread("snitch",sendIpAddressSnitch.substring(0, sendIpAddressSnitch.indexOf(",")));
+									haveQuaffle = false;
+								}
+							}
+						}
+					}
+					System.out.println("Data sent....waiting..");
 
 
 					server = serverSocket.accept();
@@ -525,6 +635,11 @@ public class Server {
 								ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
 								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
 							}
+							for (Map.Entry<Integer, String> entry2 : haveBBall.entrySet())
+							{
+								ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
+								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
+							}
 							haveQuaffle = true;
 
 							dontHave.put(hashValue,haveQBall.get(hashValue).toString());
@@ -674,8 +789,9 @@ public class Server {
 							Random randomgen = new Random();
 							int index = randomgen.nextInt(knockoutList.size());
 							String item = knockoutList.get(index);
-
 							System.out.println("Sending knockout message.."+item.substring(0, item.indexOf(",")));
+							knockoutTarget = item.substring(0, item.indexOf(","));
+
 							send.SenderThread("knockout", item.substring(0, item.indexOf(",")));
 						}
 						//Drop off the ball
@@ -700,7 +816,8 @@ public class Server {
 						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
 						xip = x.substring(1,x.length());
 						hashValue = x.substring(1, x.length()).hashCode();
-
+						
+						knockoutTarget="";
 						System.out.println("Entered knockedout block...");
 						if(!playerKnockedout)
 						{
@@ -799,6 +916,46 @@ public class Server {
 						send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),x.substring(1, x.length()));
 
 					}
+					else if(recievedData[0].equalsIgnoreCase("caughtsnitch"))
+					{
+						System.out.println("Inside Caught Snitch...");
+						x = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
+						hashValue = x.substring(1, x.length()).hashCode();
+
+						String teamval = dontHave.get(hashValue);
+						String teamnum = teamval.substring(teamval.indexOf(",")+1, teamval.length());
+
+						if(teamnum.equalsIgnoreCase("1"))
+						{
+							score1+=150;
+						}
+						else
+						{
+							score2+=150;
+						}	
+
+						for (Map.Entry<Integer, String> entry1 : dontHave.entrySet())
+						{
+							ipaddr = entry1.getValue().substring(0, entry1.getValue().indexOf(","));
+							send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2), ipaddr);
+							send.SenderThread("gameover", ipaddr);
+						}
+
+						for (Map.Entry<Integer, String> entry2 : haveQBall.entrySet())
+						{
+							ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
+							send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
+							send.SenderThread("gameover", ipaddr);
+						}
+						for (Map.Entry<Integer, String> entry2 : haveBBall.entrySet())
+						{
+							ipaddr = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
+							send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr);
+							send.SenderThread("gameover", ipaddr);
+						}
+						server.close();
+						break;
+					}
 
 
 					System.out.println("Timeout over");
@@ -822,9 +979,8 @@ public class Server {
 
 
 		ReceiverThread t2 = new ReceiverThread();
-
-
 		new Thread(t2).start();
+
 
 	}
 }
