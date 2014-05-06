@@ -69,6 +69,7 @@ public class Server {
 		public static boolean haveBludger = true;
 		public static boolean knockoutOpponent = false;
 		public static boolean goalattempt = false;
+		public static boolean addGoalKeep = false;
 
 
 		ServerSocket serverSocket;
@@ -159,11 +160,14 @@ public class Server {
 
 		public void stopTimer(String teamnum){
 			System.out.println("Stopping Timer...");
-			if(teamnum.equalsIgnoreCase("1"))
+			if(teamnum.equalsIgnoreCase("1")){
+				System.out.println("Stopping timer for team1");
 				timer1.cancel();
-			else
+			}
+			else{
+				System.out.println("Stopping timer for team2");
 				timer2.cancel();
-
+			}
 		}
 
 
@@ -181,7 +185,7 @@ public class Server {
 				while(newConnections)
 				{
 
-					if(helloCounter == 2)
+					if(helloCounter == 4)
 					{
 						System.out.println("Entering hellocounter loop");
 
@@ -189,9 +193,10 @@ public class Server {
 						{
 							System.out.println(entry.getKey() + "," + entry.getValue());
 							ipaddr_MapEntry = entry.getValue().substring(0, entry.getValue().indexOf(","));
+							String initteamNum = entry.getValue().substring(entry.getValue().indexOf(",")+1,entry.getValue().length());
 							System.out.println(ipaddr_MapEntry);
 							System.out.println("Before sending the scores");
-							send.SenderThread("start-"+String.valueOf((helloCounter%2)+1),ipaddr_MapEntry);
+							send.SenderThread("start-"+initteamNum,ipaddr_MapEntry);
 							helloCounter --;
 						}
 						server.close();
@@ -232,7 +237,7 @@ public class Server {
 				while(flag_run)
 				{				
 					System.out.println("Inside the main while loop");
-					haveBludger = false;
+					//haveBludger = false;
 
 					if(haveQuaffle)
 					{
@@ -258,18 +263,33 @@ public class Server {
 							System.out.println("after computing values size"+dontHave.size());
 							if((dontHave.size()-goalKeep.size()) != 0)
 							{
-								String sendIpAddressQuaffle;
-								sendIpAddressQuaffle = (values_dontHave_Q[generator.nextInt(values_dontHave_Q.length)]).toString();
-								System.out.println(sendIpAddressQuaffle);
-								if(!knockoutTarget.equalsIgnoreCase(sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")))){
-									System.out.println("Sending the Quaffle....");
-									send.SenderThread("Quaffle",sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")));
-									hashValueQ = sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")).toString().hashCode();
-									haveQuaffle = false;
-									System.out.println("Q hashvalue:"+hashValueQ);
-									qValue = dontHave.get(hashValueQ).toString();
-									haveQBall.put(hashValueQ, qValue);
-									dontHave.remove(hashValueQ);
+								while(true){
+									String sendIpAddressQuaffle;
+									sendIpAddressQuaffle = (values_dontHave_Q[generator.nextInt(values_dontHave_Q.length)]).toString();
+									System.out.println(sendIpAddressQuaffle);
+									if(!knockoutTarget.equalsIgnoreCase(sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")))){
+										System.out.println("Sending the Quaffle....");
+										send.SenderThread("Quaffle",sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")));
+										hashValueQ = sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")).toString().hashCode();
+										haveQuaffle = false;
+										System.out.println("Q hashvalue:"+hashValueQ);
+										qValue = dontHave.get(hashValueQ).toString();
+										haveQBall.put(hashValueQ, qValue);
+										dontHave.remove(hashValueQ);
+										break;
+									}
+									else
+									{
+										sendIpAddressQuaffle = (values_dontHave_Q[generator.nextInt(values_dontHave_Q.length)]).toString();
+										send.SenderThread("Quaffle",sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")));
+										hashValueQ = sendIpAddressQuaffle.substring(0, sendIpAddressQuaffle.indexOf(",")).toString().hashCode();
+										haveQuaffle = false;
+										System.out.println("Q hashvalue:"+hashValueQ);
+										qValue = dontHave.get(hashValueQ).toString();
+										haveQBall.put(hashValueQ, qValue);
+										dontHave.remove(hashValueQ);
+										break;
+									}
 								}
 							}
 						}
@@ -294,31 +314,47 @@ public class Server {
 						System.out.println("after computing values size in haveBludger"+dontHave.size());
 						if((dontHave.size()-goalKeep.size()) != 0)
 						{
-							String sendIpAddressBludger;
-							sendIpAddressBludger = (values_dontHave_B[generator.nextInt(values_dontHave_B.length)]).toString();
-							System.out.println(sendIpAddressBludger);
-							if(!knockoutTarget.equalsIgnoreCase(sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")))){
-								System.out.println("Sending the Bludger....");
-								send.SenderThread("Bludger",sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")));
-								hashValueB = sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")).toString().hashCode();
-								haveBludger = false;
-								System.out.println("B hashvalue:"+hashValueB);
-								bValue = dontHave.get(hashValueB).toString();
-								haveBBall.put(hashValueB, bValue);
-								dontHave.remove(hashValueB);
+							while(true){
+								String sendIpAddressBludger;
+								sendIpAddressBludger = (values_dontHave_B[generator.nextInt(values_dontHave_B.length)]).toString();
+								System.out.println(sendIpAddressBludger);
+								if(!knockoutTarget.equalsIgnoreCase(sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")))){
+									System.out.println("Sending the Bludger....");
+									send.SenderThread("Bludger",sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")));
+									hashValueB = sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")).toString().hashCode();
+									haveBludger = false;
+									System.out.println("B hashvalue:"+hashValueB);
+									bValue = dontHave.get(hashValueB).toString();
+									haveBBall.put(hashValueB, bValue);
+									dontHave.remove(hashValueB);
+									break;
+								}
+								else
+								{
+									sendIpAddressBludger = (values_dontHave_B[generator.nextInt(values_dontHave_B.length)]).toString();
+									System.out.println("Sending the Bludger....");
+									send.SenderThread("Bludger",sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")));
+									hashValueB = sendIpAddressBludger.substring(0, sendIpAddressBludger.indexOf(",")).toString().hashCode();
+									haveBludger = false;
+									System.out.println("B hashvalue:"+hashValueB);
+									bValue = dontHave.get(hashValueB).toString();
+									haveBBall.put(hashValueB, bValue);
+									dontHave.remove(hashValueB);
+									break;
+								}
 							}
 						}
 
 					}
 
-				
 
-					if((score1 > 50) || (score2 > 50))
+
+					if((score1 > 100) || (score2 > 100))
 					{
 						double randomVal;
 						String sendIpAddressSnitch;
 						System.out.println("Inside Snitch distribution");
-						if(Math.abs(score1 - score2) <= 30)
+						if(Math.abs(score1 - score2) <= 60)
 						{
 							//	randomVal = Math.random();
 							//	if(randomVal > 0.5)
@@ -377,7 +413,7 @@ public class Server {
 						System.out.println("caught Quaffle");
 						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
 						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
-					//	System.out.println(hashValue+":"+dontHave.get(hashValue).toString());
+						//	System.out.println(hashValue+":"+dontHave.get(hashValue).toString());
 
 
 						if(goalattempt==true)
@@ -394,10 +430,10 @@ public class Server {
 							System.out.println("Stopped Goal keeping...inside caught quaffle");
 						}
 
-					//	haveQBall.put(hashValue,dontHave.get(hashValue).toString());
-					//	System.out.println("Size of dont have list before removing"+dontHave.size());
-					//	dontHave.remove(hashValue);
-					//	System.out.println("Size of dont have list after removing"+dontHave.size());
+						//	haveQBall.put(hashValue,dontHave.get(hashValue).toString());
+						//	System.out.println("Size of dont have list before removing"+dontHave.size());
+						//	dontHave.remove(hashValue);
+						//	System.out.println("Size of dont have list after removing"+dontHave.size());
 
 					}
 					else if(recievedData[0].equalsIgnoreCase("missedQuaffle"))
@@ -449,12 +485,7 @@ public class Server {
 						System.out.println("caught Bludger");
 						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
 						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
-						//		System.out.println(hashValue+":"+dontHave.get(hashValue).toString());
 
-					//	haveBBall.put(hashValue, dontHave.get(hashValue).toString());
-					//	System.out.println("Size of dont have list before removing bludger"+dontHave.size());
-					//	dontHave.remove(hashValue);
-					//	System.out.println("Size of dont have list after removing bludger"+dontHave.size());
 					}
 					else if(recievedData[0].equalsIgnoreCase("missedBludger"))
 					{
@@ -468,33 +499,55 @@ public class Server {
 						ipAddress = ((InetSocketAddress)server.getRemoteSocketAddress()).getAddress().toString();
 						hashValue = ipAddress.substring(1, ipAddress.length()).hashCode();
 						String tempValue = dontHave.get(hashValue).toString();
-						String teamname = tempValue.substring(tempValue.indexOf(",")+1, tempValue.length());;
+						String teamname = tempValue.substring(tempValue.indexOf(",")+1, tempValue.length());
 
-
+						System.out.println("Team trying to goal keep"+teamname);
 						System.out.println("ENtered GOal Keep function");
 
-						if(!goalKeep.containsKey(hashValue))
+						if(goalKeep.isEmpty())
 						{
-							if(dontHave.containsKey(hashValue) && (teamname.equalsIgnoreCase("1")))
+							addGoalKeep = true;
+						}
+						else{
+							System.out.println("Iterating goalkeep to check if trying to goal keep from same team");
+							for(Map.Entry<Integer, String> entry: goalKeep.entrySet())
 							{
-								System.out.println("team 1 trying to goal keep");
-								goalKeep.put(hashValue, dontHave.get(hashValue));
-
-								System.out.println("Before starting the timer 1"+hashValue);
-								rthread.startTimer(hashValue,teamname);
+								String sameteamNum = (entry.getValue().toString()).substring(entry.getValue().toString().indexOf(",")+1, entry.getValue().toString().length());
+								if(teamname.equalsIgnoreCase(sameteamNum)){
+									System.out.println("Team no. trying to goalkeep"+sameteamNum);
+									addGoalKeep = false;
+									System.out.println("Before sending sec goalkeeper");
+									send.SenderThread("secondgoalkeeper", ipAddress.substring(1, ipAddress.length()));
+									break;
+								}
+								else{
+									System.out.println("Not from same team"+sameteamNum);
+									addGoalKeep = true;
+								}
 							}
-							else if(dontHave.containsKey(hashValue) && (teamname.equalsIgnoreCase("2")))
+						}
+						System.out.println("After breaking out of second goal keep test"+addGoalKeep);
+						if(addGoalKeep){
+							if(!goalKeep.containsKey(hashValue))
 							{
-								System.out.println("team 2 trying to goal keep");
-								goalKeep.put(hashValue, dontHave.get(hashValue));
+								if(dontHave.containsKey(hashValue) && (teamname.equalsIgnoreCase("1")))
+								{
+									System.out.println("team 1 trying to goal keep");
+									goalKeep.put(hashValue, dontHave.get(hashValue));
 
-								System.out.println("Before starting the timer 2"+hashValue);
-								rthread.startTimer(hashValue,teamname);
+									System.out.println("Before starting the timer 1"+hashValue);
+									rthread.startTimer(hashValue,teamname);
+								}
+								else if(dontHave.containsKey(hashValue) && (teamname.equalsIgnoreCase("2")))
+								{
+									System.out.println("team 2 trying to goal keep");
+									goalKeep.put(hashValue, dontHave.get(hashValue));
+
+									System.out.println("Before starting the timer 2"+hashValue);
+									rthread.startTimer(hashValue,teamname);
+								}
 							}
-						}	
-
-
-
+						}
 					}
 					else if(recievedData[0].equalsIgnoreCase("trygoal"))
 					{
@@ -769,77 +822,65 @@ public class Server {
 						//	knockoutTarget="";
 						System.out.println("Entered knockedout block...");
 						if(!playerKnockedout)
-						{
-							for (Map.Entry<Integer, String> entry : haveQBall.entrySet())
-							{
-								String entryValue = entry.getValue().toString();
-								ipaddr_MapEntry = entry.getValue().substring(0, entry.getValue().indexOf(",")).toString();
+						{	
+							System.out.println("Checking in QBAll list");
+							String tempValue = haveQBall.get(hashValue).toString();
+							String ipaddr = tempValue.substring(0, tempValue.indexOf(","));
 
-								System.out.println("Iterating QBall to put to offline list");
-								if(knockedoutIPaddr.equalsIgnoreCase(ipaddr_MapEntry)){
-									System.out.println("Putting to knockoutlist from QBall");
-									haveQuaffle = true;
-									offlineList.put(hashValue,entryValue);
-									haveQBall.remove(hashValue);
-									knockoutList.clear();
-									playerKnockedout = true;
-									break;
-								}
+							if(knockedoutIPaddr.equalsIgnoreCase(ipaddr)){
+								System.out.println("Putting to knockoutlist from QBall");
+								haveQuaffle = true;
+								offlineList.put(hashValue,tempValue);
+								haveQBall.remove(hashValue);
+								knockoutList.clear();
+								playerKnockedout = true;
 							}
 						}
 
 						if(!playerKnockedout)
 						{
-							for (Map.Entry<Integer, String> entry : haveBBall.entrySet())
-							{
-								String entryValue = entry.getValue().toString();
-								ipaddr_MapEntry = entry.getValue().substring(0, entry.getValue().indexOf(",")).toString();
+							System.out.println("Checking in BBAll list");
+							String tempValue = haveBBall.get(hashValue).toString();
+							String ipaddr = tempValue.substring(0, tempValue.indexOf(","));
 
-								System.out.println("Iterating BBall to put to offline list");
-								if(knockedoutIPaddr.equalsIgnoreCase(ipaddr_MapEntry)){
+							if(knockedoutIPaddr.equalsIgnoreCase(ipaddr)){
 
-									System.out.println("Putting to knockoutlist from BBall");
-									haveBludger = true;
-									offlineList.put(hashValue,entryValue);
-									haveBBall.remove(hashValue);
-									knockoutList.clear();
-									playerKnockedout = true;
-									break;
-								}
+								System.out.println("Putting to knockoutlist from BBall");
+								haveBludger = true;
+								offlineList.put(hashValue,tempValue);
+								haveBBall.remove(hashValue);
+								knockoutList.clear();
+								playerKnockedout = true;
 							}
 						}
 
 						if(!playerKnockedout)
 						{
-							for (Map.Entry<Integer, String> entry : dontHave.entrySet())
+							System.out.println("Checking in dontHave list");
+							String tempValue = dontHave.get(hashValue).toString();
+							String ipaddr = tempValue.substring(0, tempValue.indexOf(","));
+							String teamNum = tempValue.substring(tempValue.indexOf(",")+1, tempValue.length());
+
+							if(goalKeep.containsKey(hashValue))
 							{
-								String entryValue = entry.getValue().toString();
-								ipaddr_MapEntry = entry.getValue().substring(0, entry.getValue().indexOf(",")).toString();
-								String teamNum = entry.getValue().substring(entry.getValue().indexOf(",")+1,entry.getValue().length()).toString();
+								System.out.println("Goal Keep has the entry");
+								goalKeep.remove(hashValue);
+								rthread.stopTimer(teamNum);
 
-								if(goalKeep.containsKey(hashValue))
-								{
-									System.out.println("Goal Keep has the entry");
-									goalKeep.remove(entry.getKey());
-									rthread.stopTimer(teamNum);
-
-								}
-
-								System.out.println("IP1:"+knockedoutIPaddr);
-								System.out.println("IP2:"+ipaddr_MapEntry);
-								System.out.println("Iterating dontHave to put to offline list");
-								if(knockedoutIPaddr.equalsIgnoreCase(ipaddr_MapEntry))
-								{
-									System.out.println("Putting to knockoutlist from donthave");
-									offlineList.put(hashValue,entryValue);
-									System.out.println("Value of offlinelist entry"+offlineList.get(hashValue));
-									dontHave.remove(hashValue);
-									knockoutList.clear();
-									playerKnockedout = true;
-									break;
-								}
 							}
 
+							System.out.println("IP1:"+knockedoutIPaddr);
+							System.out.println("IP2:"+ipaddr);
+							//	System.out.println("Iterating dontHave to put to offline list");
+							if(knockedoutIPaddr.equalsIgnoreCase(ipaddr))
+							{
+								System.out.println("Putting to knockoutlist from donthave");
+								offlineList.put(hashValue,tempValue);
+								System.out.println("Value of offlinelist entry"+offlineList.get(hashValue));
+								dontHave.remove(hashValue);
+								knockoutList.clear();
+								playerKnockedout = true;
+							}
 						}
 						haveBludger = true;
 						send.SenderThread("knockoutsuccess", tryknockoutIP);
