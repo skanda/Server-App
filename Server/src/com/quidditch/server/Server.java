@@ -185,7 +185,7 @@ public class Server {
 				while(newConnections)
 				{
 
-					if(helloCounter == 4)
+					if(helloCounter == 2)
 					{
 						System.out.println("Entering hellocounter loop");
 
@@ -237,7 +237,7 @@ public class Server {
 				while(flag_run)
 				{				
 					System.out.println("Inside the main while loop");
-					//haveBludger = false;
+					haveBludger = false;
 
 					if(haveQuaffle)
 					{
@@ -382,7 +382,7 @@ public class Server {
 								//	sendIpAddress = dontHave.get(hashValue);
 								System.out.println("Sending the Snitch....");
 								send.SenderThread("snitch",sendIpAddressSnitch.substring(0, sendIpAddressSnitch.indexOf(",")));
-								haveQuaffle = false;
+							//	haveQuaffle = false;
 							}
 							//		}
 						}
@@ -610,6 +610,11 @@ public class Server {
 									ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
 									send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
 								}
+								for (Map.Entry<Integer, String> entry2 : haveBBall.entrySet())
+								{
+									ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
+									send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
+								}
 								haveQuaffle = true;
 							}
 							dontHave.put(hashValue,haveQBall.get(hashValue).toString());
@@ -643,6 +648,7 @@ public class Server {
 								ipaddr_MapEntry = entry2.getValue().substring(0, entry2.getValue().indexOf(","));
 								send.SenderThread(String.valueOf(score1)+":"+String.valueOf(score2),ipaddr_MapEntry);
 							}
+							
 							haveQuaffle = true;
 
 							dontHave.put(hashValue,haveQBall.get(hashValue).toString());
@@ -821,11 +827,13 @@ public class Server {
 
 						//	knockoutTarget="";
 						System.out.println("Entered knockedout block...");
-						if(!playerKnockedout)
+						if(!playerKnockedout && haveQBall.containsKey(hashValue))
 						{	
 							System.out.println("Checking in QBAll list");
 							String tempValue = haveQBall.get(hashValue).toString();
+							System.out.println("Got tempValue");
 							String ipaddr = tempValue.substring(0, tempValue.indexOf(","));
+							System.out.println("Got ipaddr");
 
 							if(knockedoutIPaddr.equalsIgnoreCase(ipaddr)){
 								System.out.println("Putting to knockoutlist from QBall");
@@ -837,7 +845,7 @@ public class Server {
 							}
 						}
 
-						if(!playerKnockedout)
+						if(!playerKnockedout && haveBBall.containsKey(hashValue))
 						{
 							System.out.println("Checking in BBAll list");
 							String tempValue = haveBBall.get(hashValue).toString();
@@ -854,7 +862,7 @@ public class Server {
 							}
 						}
 
-						if(!playerKnockedout)
+						if(!playerKnockedout && dontHave.containsKey(hashValue))
 						{
 							System.out.println("Checking in dontHave list");
 							String tempValue = dontHave.get(hashValue).toString();
